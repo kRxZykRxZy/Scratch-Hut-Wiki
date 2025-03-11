@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Futuristic Multi-Language Wiki</title>
+  <title>Futuristic Multi-Lang Wiki</title>
   <style>
     body {
       background: #0f172a;
@@ -13,14 +13,25 @@
       justify-content: center;
       min-height: 100vh;
     }
-    h1 { font-size: 2.5rem; }
+    h1 { 
+      font-size: 2.5rem; 
+    }
     input, select, textarea, button {
       background: #1e293b;
       border: 1px solid #a5f3fc;
       color: #a5f3fc;
-      padding: 10px;
+      padding: 15px;
       margin: 5px;
       border-radius: 10px;
+      font-size: 1rem;
+    }
+    input, select {
+      width: 300px;
+    }
+    textarea {
+      width: 300px;
+      height: 150px;
+      resize: vertical;
     }
     .page {
       background: #1e293b;
@@ -30,8 +41,15 @@
       width: 80%;
       border-radius: 15px;
     }
-    pre { background: #334155; padding: 10px; border-radius: 10px; overflow: auto; }
-    button { cursor: pointer; }
+    pre { 
+      background: #334155; 
+      padding: 10px; 
+      border-radius: 10px; 
+      overflow: auto; 
+    }
+    button { 
+      cursor: pointer; 
+    }
   </style>
 </head>
 <body>
@@ -55,7 +73,7 @@
   <div id="pages"></div>
 
   <script>
-    const API_URL = 'https://your-deployed-server-url.com';
+    const API_URL = 'https://wiki-nqbp.onrender.com';
 
     async function fetchPages() {
       const res = await fetch(`${API_URL}/pages`);
@@ -99,7 +117,11 @@
       }
     }
 
+    // Fetch pages on load
     fetchPages();
+
+    // Set interval to fetch pages every 5 seconds
+    setInterval(fetchPages, 200);
   </script>
 </body>
 </html>
