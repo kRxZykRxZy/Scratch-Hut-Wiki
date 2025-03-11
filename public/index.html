@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Futuristic Multi-Lang Wiki</title>
+  <title>Scratch Coding Hut Wiki</title>
   <style>
     body {
       background: #0f172a;
@@ -15,22 +15,23 @@
     }
     h1 { 
       font-size: 2.5rem; 
+      margin-bottom: 20px;
     }
     input, select, textarea, button {
       background: #1e293b;
       border: 1px solid #a5f3fc;
       color: #a5f3fc;
-      padding: 15px;
-      margin: 5px;
+      padding: 20px;
+      margin: 10px;
       border-radius: 10px;
-      font-size: 1rem;
+      font-size: 1.2rem;
+      width: 60vw; /* Increased width */
     }
-    input, select {
-      width: 300px;
+    select {
+      width: 62vw; /* Make the select slightly wider */
     }
     textarea {
-      width: 300px;
-      height: 150px;
+      height: 200px;
       resize: vertical;
     }
     .page {
@@ -38,7 +39,7 @@
       border: 1px solid #a5f3fc;
       padding: 20px;
       margin: 10px 0;
-      width: 80%;
+      width: 80vw; /* Set pages to display at 80% of viewport width */
       border-radius: 15px;
     }
     pre { 
@@ -46,6 +47,7 @@
       padding: 10px; 
       border-radius: 10px; 
       overflow: auto; 
+      max-height: 200px; /* Added a max height for better scrolling */
     }
     button { 
       cursor: pointer; 
@@ -56,6 +58,7 @@
   <h1>Futuristic Multi-Language Wiki</h1>
   <input id="title" type="text" placeholder="Page Title">
   <select id="extension">
+    <option value="txt">Text</option>
     <option value="html">HTML</option>
     <option value="css">CSS</option>
     <option value="js">JavaScript</option>
