@@ -25,10 +25,10 @@
       margin: 10px;
       border-radius: 10px;
       font-size: 1.2rem;
-      width: 60vw; /* Increased width */
+      width: 60vw;
     }
     select {
-      width: 62vw; /* Make the select slightly wider */
+      width: 62vw;
     }
     textarea {
       height: 200px;
@@ -39,7 +39,7 @@
       border: 1px solid #a5f3fc;
       padding: 20px;
       margin: 10px 0;
-      width: 80vw; /* Set pages to display at 80% of viewport width */
+      width: 80vw;
       border-radius: 15px;
     }
     pre { 
@@ -47,10 +47,17 @@
       padding: 10px; 
       border-radius: 10px; 
       overflow: auto; 
-      max-height: 200px; /* Added a max height for better scrolling */
+      max-height: 200px;
     }
     button { 
       cursor: pointer; 
+    }
+    .output {
+      background: #334155;
+      color: #facc15;
+      padding: 10px;
+      border-radius: 10px;
+      margin-top: 10px;
     }
   </style>
 </head>
@@ -58,9 +65,8 @@
 <center>
 <h1>Scratch Coding Hut Wiki</h1>
 
-<!-- Title and Content for New or Edited Pages -->
 <input id="title" type="text" placeholder="Page Title" required>
-<select id="extension">
+<select id="extension" multiple>
   <option value="txt">Text</option>
   <option value="html">HTML</option>
   <option value="css">CSS</option>
@@ -83,67 +89,53 @@
 <script>
   const API_URL = 'https://wiki-nqbp.onrender.com';
 
-  let editingPageTitle = null;  // Keep track of the page we are editing
+  let editingPageTitle = null;
 
-  // Fetch pages and display them
   async function fetchPages() {
     const res = await fetch(`${API_URL}/pages`);
     const pages = await res.json();
     document.getElementById('pages').innerHTML = pages.map(page => `
       <div class="page">
-        <h2>${page.title}</h2>
+        <h2>${page.title.split('.')[0]}</h2>
         <pre><code>${page.content}</code></pre>
-        <button onclick="editPage('${page.title.split('.')[0]}', '${page.content}')">Edit</button>
-        <button onclick="deletePage('${page.title.split('.')[0]}')">Delete</button>
+        <button onclick="editPage('${page.title}', '${page.content.replace(/'/g, "\\'")}')">Edit</button>
+        <button onclick="deletePage('${page.title}')">Delete</button>
+        <button onclick="runCode('${page.title.split('.').pop()}', '${page.content.replace(/'/g, "\\'").replace(/\n/g, "\\n")}')">Run</button>
+        <div id="output-${page.title.split('.')[0]}" class="output"></div>
       </div>
     `).join('');
   }
 
-  // Save or update the page
   async function savePage() {
     const title = document.getElementById('title').value;
-    const extension = document.getElementById('extension').value;
+    const extensions = Array.from(document.getElementById('extension').selectedOptions).map(opt => opt.value);
     const content = document.getElementById('content').value;
 
-    // Validate the form fields
     if (!title || !content) {
       alert("Please provide both title and content.");
       return;
     }
 
-    if (editingPageTitle) {
-      // If we are editing, update the existing page
-      await fetch(`${API_URL}/edit/${editingPageTitle}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title, extension, content })
-      });
-      editingPageTitle = null;  // Clear the editing flag after update
-    } else {
-      // Otherwise, create a new page
-      await fetch(`${API_URL}/create`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title, extension, content })
-      });
-    }
-    clearForm();  // Clear the form after saving
-    fetchPages();  // Refresh the page list
+    const method = editingPageTitle ? 'PUT' : 'POST';
+    const endpoint = editingPageTitle ? `${API_URL}/edit/${editingPageTitle}` : `${API_URL}/create`;
+
+    await fetch(endpoint, {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title, extensions, content })
+    });
+
+    editingPageTitle = null;
+    clearForm();
+    fetchPages();
   }
 
-  // Edit a page and load its content into the form fields
   function editPage(title, content) {
-    document.getElementById('title').value = title;
+    document.getElementById('title').value = title.split('.')[0];
     document.getElementById('content').value = content;
-    // Set the extension based on the title's file extension
-    const extension = title.split('.').pop();
-    document.getElementById('extension').value = extension;
-
-    // Set the editing page title to identify we are editing
     editingPageTitle = title;
   }
 
-  // Delete a page
   async function deletePage(title) {
     if (confirm('Are you sure you want to delete this page?')) {
       await fetch(`${API_URL}/delete/${title}`, { method: 'DELETE' });
@@ -151,18 +143,38 @@
     }
   }
 
-  // Clear the form fields
   function clearForm() {
     document.getElementById('title').value = '';
     document.getElementById('content').value = '';
-    document.getElementById('extension').value = 'txt';
+    Array.from(document.getElementById('extension').options).forEach(opt => opt.selected = false);
   }
 
-  // Fetch pages on load
-  fetchPages();
+  function runCode(extension, code) {
+    const outputDiv = document.getElementById(`output-${editingPageTitle.split('.')[0]}`);
+    if (extension === 'js') {
+      try {
+        const result = eval(code);
+        outputDiv.innerText = result !== undefined ? result : 'Code ran successfully!';
+      } catch (err) {
+        outputDiv.innerText = `Error: ${err.message}`;
+      }
+    } else if (extension === 'html') {
+      const newWindow = window.open();
+      newWindow.document.write(code);
+      newWindow.document.close();
+      outputDiv.innerText = 'HTML preview opened in a new tab!';
+    } else if (extension === 'css') {
+      const style = document.createElement('style');
+      style.innerText = code;
+      document.head.appendChild(style);
+      outputDiv.innerText = 'CSS applied!';
+    } else {
+      outputDiv.innerText = 'Running this language is not supported in the browser.';
+    }
+  }
 
-  // Set interval to fetch pages every 5 seconds
-  setInterval(fetchPages, 200); // Updated interval to 5000ms
+  fetchPages();
+  setInterval(fetchPages, 200);
 </script>
 </body>
 </html>
