@@ -145,106 +145,54 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
+            const apiUrl = 'https://wiki-nqbp.onrender.com/api/wiki';
             const wikiList = document.getElementById('wiki-entries');
             const wikiForm = document.getElementById('wiki-form');
             const wikiTitle = document.getElementById('wiki-title');
             const wikiContent = document.getElementById('wiki-content');
             let currentEditId = null;
 
-            const apiUrl = 'https://wiki-nqbp.onrender.com/api/wiki';  // Backend API URL
-
-            // Fetch all wiki entries and display them
-            function loadWikiEntries() {
-                fetch(apiUrl)
-                    .then(response => response.json())
-                    .then(entries => {
-                        wikiList.innerHTML = '';
-                        entries.forEach(entry => {
-                            const li = document.createElement('li');
-                            li.classList.add('wiki-item');
-                            li.innerHTML = `
-                                <h3>${entry.title}</h3>
-                                <div class="wiki-content">${entry.content}</div>
-                                <button class="edit-btn" data-id="${entry.id}">Edit</button>
-                                <button class="delete-btn" data-id="${entry.id}">Delete</button>
-                            `;
-                            wikiList.appendChild(li);
-                        });
-
-                        // Attach event listeners for Edit and Delete buttons
-                        document.querySelectorAll('.edit-btn').forEach(button => {
-                            button.addEventListener('click', editWikiEntry);
-                        });
-                        document.querySelectorAll('.delete-btn').forEach(button => {
-                            button.addEventListener('click', deleteWikiEntry);
-                        });
-                    });
+            async function loadWikiEntries() {
+                const res = await fetch(apiUrl);
+                const entries = await res.json();
+                wikiList.innerHTML = '';
+                entries.forEach(entry => {
+                    const li = document.createElement('li');
+                    li.className = 'wiki-item';
+                    li.innerHTML = `<h3>${entry.title}</h3>${entry.content}<button onclick="editEntry(${entry.id})">Edit</button><button onclick="deleteEntry(${entry.id})">Delete</button>`;
+                    wikiList.appendChild(li);
+                });
             }
 
-            // Add or Edit wiki entry
-            wikiForm.addEventListener('submit', event => {
-                event.preventDefault();
-                const newEntry = {
-                    title: wikiTitle.value,
-                    content: wikiContent.value
-                };
+            wikiForm.onsubmit = async (e) => {
+                e.preventDefault();
+                const entry = { title: wikiTitle.value, content: wikiContent.value };
+                const method = currentEditId ? 'PUT' : 'POST';
+                const url = currentEditId ? `${apiUrl}/${currentEditId}` : apiUrl;
+                await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(entry) });
+                resetForm();
+                loadWikiEntries();
+            };
 
-                if (currentEditId) {
-                    // Edit the existing entry
-                    fetch(`${apiUrl}/${currentEditId}`, {
-                        method: 'PUT',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(newEntry)
-                    })
-                    .then(response => response.json())
-                    .then(() => {
-                        loadWikiEntries();
-                        resetForm();
-                    });
-                } else {
-                    // Add a new entry
-                    fetch(apiUrl, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(newEntry)
-                    })
-                    .then(response => response.json())
-                    .then(() => {
-                        loadWikiEntries();
-                        resetForm();
-                    });
-                }
-            });
-
-            // Edit a wiki entry
-            function editWikiEntry(event) {
-                const id = event.target.getAttribute('data-id');
-                fetch(`${apiUrl}/${id}`)
-                    .then(response => response.json())
-                    .then(entry => {
-                        wikiTitle.value = entry.title;
-                        wikiContent.value = entry.content;
-                        currentEditId = entry.id;
-                    });
+            async function editEntry(id) {
+                const res = await fetch(`${apiUrl}/${id}`);
+                const entry = await res.json();
+                wikiTitle.value = entry.title;
+                wikiContent.value = entry.content;
+                currentEditId = entry.id;
             }
 
-            // Delete a wiki entry
-            function deleteWikiEntry(event) {
-                const id = event.target.getAttribute('data-id');
-                if (confirm('Are you sure you want to delete this entry?')) {
-                    fetch(`${apiUrl}/${id}`, { method: 'DELETE' })
-                        .then(() => loadWikiEntries());
-                }
+            async function deleteEntry(id) {
+                await fetch(`${apiUrl}/${id}`, { method: 'DELETE' });
+                loadWikiEntries();
             }
 
-            // Reset the form
             function resetForm() {
                 wikiTitle.value = '';
                 wikiContent.value = '';
                 currentEditId = null;
             }
 
-            // Load initial wiki entries
             loadWikiEntries();
         });
     </script>
