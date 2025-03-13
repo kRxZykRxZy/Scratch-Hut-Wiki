@@ -143,57 +143,88 @@
     </div>
 
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const apiUrl = 'https://wiki-nqbp.onrender.com/api/wiki';
-            const wikiList = document.getElementById('wiki-entries');
-            const wikiForm = document.getElementById('wiki-form');
-            const wikiTitle = document.getElementById('wiki-title');
-            const wikiContent = document.getElementById('wiki-content');
-            let currentEditId = null;
+        document.addEventListener('DOMContentLoaded', async () => {
+    const apiUrl = 'https://wiki-nqbp.onrender.com/api/wiki';
+    const wikiList = document.getElementById('wiki-entries');
+    const wikiForm = document.getElementById('wiki-form');
+    const wikiTitle = document.getElementById('wiki-title');
+    const wikiContent = document.getElementById('wiki-content');
+    let currentEditId = null;
 
-            async function loadWikiEntries() {
-                const res = await fetch(apiUrl);
-                const entries = await res.json();
-                wikiList.innerHTML = '';
-                entries.forEach(entry => {
-                    const li = document.createElement('li');
-                    li.className = 'wiki-item';
-                    li.innerHTML = `<h3>${entry.title}</h3>${entry.content}<button onclick="editEntry(${entry.id})">Edit</button><button onclick="deleteEntry(${entry.id})">Delete</button>`;
-                    wikiList.appendChild(li);
-                });
-            }
+    async function loadWikiEntries() {
+        try {
+            const res = await fetch(apiUrl);
+            if (!res.ok) throw new Error(`Failed to fetch: ${res.status}`);
+            const entries = await res.json();
+            wikiList.innerHTML = '';
+            entries.forEach(entry => {
+                const li = document.createElement('li');
+                li.className = 'wiki-item';
+                li.innerHTML = `
+                    <h3>${entry.title}</h3>
+                    ${entry.content}
+                    <button onclick="editEntry(${entry.id})">Edit</button>
+                    <button onclick="deleteEntry(${entry.id})">Delete</button>
+                `;
+                wikiList.appendChild(li);
+            });
+        } catch (error) {
+            console.error('Error loading wiki entries:', error);
+        }
+    }
 
-            wikiForm.onsubmit = async (e) => {
-                e.preventDefault();
-                const entry = { title: wikiTitle.value, content: wikiContent.value };
-                const method = currentEditId ? 'PUT' : 'POST';
-                const url = currentEditId ? `${apiUrl}/${currentEditId}` : apiUrl;
-                await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(entry) });
-                resetForm();
-                loadWikiEntries();
-            };
+    wikiForm.onsubmit = async (e) => {
+        e.preventDefault();
+        const entry = { title: wikiTitle.value, content: wikiContent.value };
+        const method = currentEditId ? 'PUT' : 'POST';
+        const url = currentEditId ? `${apiUrl}/${currentEditId}` : apiUrl;
 
-            async function editEntry(id) {
-                const res = await fetch(`${apiUrl}/${id}`);
-                const entry = await res.json();
-                wikiTitle.value = entry.title;
-                wikiContent.value = entry.content;
-                currentEditId = entry.id;
-            }
-
-            async function deleteEntry(id) {
-                await fetch(`${apiUrl}/${id}`, { method: 'DELETE' });
-                loadWikiEntries();
-            }
-
-            function resetForm() {
-                wikiTitle.value = '';
-                wikiContent.value = '';
-                currentEditId = null;
-            }
-
+        try {
+            const res = await fetch(url, {
+                method,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(entry)
+            });
+            if (!res.ok) throw new Error(`Failed to save: ${res.status}`);
+            resetForm();
             loadWikiEntries();
-        });
+        } catch (error) {
+            console.error('Error saving wiki entry:', error);
+        }
+    };
+
+    window.editEntry = async (id) => {
+        try {
+            const res = await fetch(`${apiUrl}/${id}`);
+            if (!res.ok) throw new Error(`Failed to fetch entry: ${res.status}`);
+            const entry = await res.json();
+            wikiTitle.value = entry.title;
+            wikiContent.value = entry.content;
+            currentEditId = entry.id;
+        } catch (error) {
+            console.error('Error editing wiki entry:', error);
+        }
+    };
+
+    window.deleteEntry = async (id) => {
+        try {
+            const res = await fetch(`${apiUrl}/${id}`, { method: 'DELETE' });
+            if (!res.ok) throw new Error(`Failed to delete entry: ${res.status}`);
+            loadWikiEntries();
+        } catch (error) {
+            console.error('Error deleting wiki entry:', error);
+        }
+    };
+
+    function resetForm() {
+        wikiTitle.value = '';
+        wikiContent.value = '';
+        currentEditId = null;
+    }
+
+    loadWikiEntries();
+});
+
     </script>
 </body>
 </html>
