@@ -61,4 +61,3 @@ app.delete('/delete/:title', (req, res) => {
   res.send('Page deleted');
 });
 
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`
