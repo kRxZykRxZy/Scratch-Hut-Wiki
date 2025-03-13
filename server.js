@@ -1,64 +1,76 @@
-/* Directory structure:
-- server.js (Node.js + Express backend)
-- public/
-  - index.html (Front-end UI)
-  */
+// app.js (Node.js with Express)
 
-// server.js
 const express = require('express');
-const fs = require('fs');
 const path = require('path');
-const cors = require('cors');
-
 const app = express();
-const PORT = process.env.PORT || 3000;
-const WIKI_DIR = path.join(__dirname, 'wiki');
+const port = 3000;
 
-if (!fs.existsSync(WIKI_DIR)) fs.mkdirSync(WIKI_DIR);
+// In-memory storage for wiki entries
+let wikiEntries = [
+    { id: 1, title: 'What is Node.js?', content: '<p>Node.js is a JavaScript runtime built on Chrome\'s V8 JavaScript engine.</p>' },
+    { id: 2, title: 'What is Express?', content: '<p>Express is a fast, unopinionated, minimalist web framework for Node.js.</p>' }
+];
 
-app.use(cors());
+// Middleware to parse JSON in requests
 app.use(express.json());
-app.use(express.static('public'));
 
-app.get('/pages', (req, res) => {
-  const files = fs.readdirSync(WIKI_DIR);
-  const pages = files.map(file => {
-    const content = fs.readFileSync(path.join(WIKI_DIR, file), 'utf-8');
-    return { title: path.basename(file), content };
-  });
-  res.json(pages);
+// Serve the index.html
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-app.post('/create', (req, res) => {
-  const { title, extension, content } = req.body;
-  if (!title || !content || !extension) return res.status(400).send('Invalid data');
-
-  const filePath = path.join(WIKI_DIR, `${title}.${extension}`);
-  fs.writeFileSync(filePath, content);
-  res.send('Page created');
+// Get all wiki entries
+app.get('/api/wiki', (req, res) => {
+    res.json(wikiEntries);
 });
 
-app.put('/edit/:title', (req, res) => {
-  const { title } = req.params;
-  const { content } = req.body;
-  const files = fs.readdirSync(WIKI_DIR);
-  const file = files.find(f => f.startsWith(title));
-  if (!file) return res.status(404).send('Page not found');
-
-  const filePath = path.join(WIKI_DIR, file);
-  fs.writeFileSync(filePath, content);
-  res.send('Page updated');
+// Get a specific wiki entry by ID
+app.get('/api/wiki/:id', (req, res) => {
+    const { id } = req.params;
+    const entry = wikiEntries.find(entry => entry.id == id);
+    if (entry) {
+        res.json(entry);
+    } else {
+        res.status(404).send('Entry not found');
+    }
 });
 
-app.delete('/delete/:title', (req, res) => {
-  const { title } = req.params;
-  const files = fs.readdirSync(WIKI_DIR);
-  const file = files.find(f => f.startsWith(title));
-  if (!file) return res.status(404).send('Page not found');
-
-  const filePath = path.join(WIKI_DIR, file);
-  fs.unlinkSync(filePath);
-  res.send('Page deleted');
+// Create a new wiki entry
+app.post('/api/wiki', (req, res) => {
+    const { title, content } = req.body;
+    const newEntry = { id: Date.now(), title, content };
+    wikiEntries.push(newEntry);
+    res.status(201).json(newEntry);
 });
 
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+// Edit an existing wiki entry
+app.put('/api/wiki/:id', (req, res) => {
+    const { id } = req.params;
+    const { title, content } = req.body;
+
+    let entry = wikiEntries.find(entry => entry.id == id);
+    if (entry) {
+        entry.title = title;
+        entry.content = content;
+        res.json(entry);
+    } else {
+        res.status(404).send('Entry not found');
+    }
+});
+
+// Delete a wiki entry
+app.delete('/api/wiki/:id', (req, res) => {
+    const { id } = req.params;
+    const index = wikiEntries.findIndex(entry => entry.id == id);
+
+    if (index > -1) {
+        wikiEntries.splice(index, 1);
+        res.status(200).send('Entry deleted');
+    } else {
+        res.status(404).send('Entry not found');
+    }
+});
+
+app.listen(port, () => {
+    console.log(`Wiki app listening at port: ${port}`);
+});
