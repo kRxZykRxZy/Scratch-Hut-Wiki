@@ -11,7 +11,7 @@ const path = require('path');
 const cors = require('cors');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 10000;
 const WIKI_DIR = path.join(__dirname, 'wiki');
 
 if (!fs.existsSync(WIKI_DIR)) fs.mkdirSync(WIKI_DIR);
